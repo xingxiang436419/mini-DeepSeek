@@ -1,9 +1,9 @@
 <template>
   <div class="w-full h-full flex flex-col justify-start items-center">
     我是用户以前的对话记录
-    <div v-for="(item) in historys" :key="item.id">
+    <div v-for="(item) in historys" :key="item.id" @click="routeChange(item.id)"
+    class="h-[40px] mt-3 line-height-[40px]">
       <span
-        @click="$router.push(`/talking/${item.id}`)"
         class="cursor-pointer">
         {{ item.text }}
       </span>
@@ -13,12 +13,16 @@
 
 <script setup>
 import { toRef, onMounted } from 'vue';
-// import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useHistoryStore } from '@/stores/historyList';
 const historyStore = useHistoryStore();
 const historys = toRef(historyStore, 'historys')
-// const route=useRoute()
+const router=useRouter()
 
+function routeChange(id){
+  historyStore.getcurrentTalking(id)
+  router.push(`/talking/${id}`)
+}
 onMounted(()=>{
   // historyStore.getcurrentTalking(route.params.id)
   historyStore.initHistory()

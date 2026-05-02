@@ -19,23 +19,26 @@
 </template>
 
 <script setup>
-import {ref,onMounted,toRef,onBeforeUnmount} from 'vue'
-import {useRouter,useRoute} from 'vue-router'
+import {ref, computed,toRef, onMounted} from 'vue'
+import {useRouter, useRoute} from 'vue-router'
 import {useHistoryStore} from '@/stores/historyList'
 const router = useRouter()
 const route = useRoute()
 const userQuestion = ref('')
 const isTyping = ref(false)
 const assistantAnswer = ref('')
-let routeId = route.params.id
+let routeId = computed(()=>{
+  const val=route.params.id
+  return val?val:null
+})
 const historyStore = useHistoryStore()
 let currentList= toRef(historyStore,'historyList')
 
 
 onMounted(()=>{
-    routeId = route.params.id
-    if(routeId){
-      historyStore.getcurrentTalking(routeId)
+    if(routeId.value){
+      console.log('当前路由的id：',routeId.value)
+      historyStore.getcurrentTalking(routeId.value)
     }else{
       historyStore.historyList=[]
     }
@@ -74,15 +77,17 @@ async function sendQuestion() {
     assistantAnswer.value = data.choices[0].message.content
     currentList.value.push({question,answer:assistantAnswer.value})
 
+    let tempId=null
     //实现路由跳转
-    if(!routeId){
-      routeId=Date.now()
+    tempId= routeId.value?routeId.value:null
+    if(!tempId){
+      tempId=tempId?tempId:Date.now()
       const sumMessage= summarizeText(assistantAnswer.value)
-      historyStore.addHistory(routeId,sumMessage)
-      router.push(`/talking/${routeId}`)
+      historyStore.addHistory(tempId,sumMessage)
     }
+    router.push(`/talking/${tempId}`)
+    historyStore.savecurrentTalking(tempId)
 
-    historyStore.savecurrentTalking(routeId)
 
   } catch (error) {
     console.error('接口调用失败:', error)
