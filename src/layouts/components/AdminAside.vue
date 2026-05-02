@@ -26,7 +26,6 @@ const historys = toRef(historyStore, 'historys');
 const router = useRouter();
 
 function routeChange(id) {
-  historyStore.getcurrentTalking(id);
   router.push(`/talking/${id}`);
 }
 

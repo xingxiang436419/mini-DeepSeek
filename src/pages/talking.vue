@@ -4,7 +4,7 @@
     <talkingBorder></talkingBorder>
   </div>
   <!-- 输入框 -->
-  <div class="self-bottom h-[150px] z-1 w-full mt-5">
+  <div class="self-bottom min-h-[100px] w-full mb-[10px] flex flex-col justify-end">
     <inputSearch></inputSearch>
   </div>
 </template>
