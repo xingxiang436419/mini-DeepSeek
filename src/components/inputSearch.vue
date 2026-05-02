@@ -37,7 +37,7 @@ let currentList= toRef(historyStore,'historyList')
 
 onMounted(()=>{
     if(routeId.value){
-      console.log('当前路由的id：',routeId.value)
+      console.log('测试onmounted的执行时机')
       historyStore.getcurrentTalking(routeId.value)
     }else{
       historyStore.historyList=[]
