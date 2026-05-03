@@ -1,6 +1,6 @@
 <template>
   <el-container class="h-screen">
-    <el-aside class="w-[400px] bg-gray-100 flex flex-col relative">
+    <el-aside class="w-[400px] bg-gray-100 flex flex-col relative admin-aside">
       <!-- 头部log区域 -->
       <div class="flex justify-between mt-3 items-center">
         <img src="@/assets/deepseek.svg" class="w-[215px] h-[28px]">
@@ -39,5 +39,4 @@
 import AdminAside from './components/AdminAside.vue';
 </script>
 <style>
-
 </style>
