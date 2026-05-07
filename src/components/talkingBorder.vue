@@ -15,9 +15,9 @@
 <script setup>
 import { useHistoryStore } from '@/stores/historyList';
 import MarkdownRenderer from './MarkdownRenderer.vue';
-import { toRef} from 'vue';
+import { storeToRefs } from 'pinia';
 const historyStore = useHistoryStore();
-const historyList = toRef(historyStore, 'historyList')
+const { historyList } = storeToRefs(historyStore)
 </script>
 <style>
 </style>

@@ -11,7 +11,7 @@ const props = defineProps({
 })
 
 const formattedHtml = computed(() => {
-  const rawReply = props.initAnswer || '你好！我是 **DeepSeek**...'
+  const rawReply = props.initAnswer || '...'
   return md.render(rawReply)
 })
 </script>
