@@ -2,11 +2,19 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useHistoryStore = defineStore('history', () => {
-  const historyList = ref([])
+  const historyList = ref({
+    summary:'',
+    abstractedCursor:0,
+    messages:[]
+  })
   const historys = ref([])
 
   function getcurrentTalking(id) {
-    historyList.value = JSON.parse(localStorage.getItem('history-' + id)) || []
+    historyList.value = JSON.parse(localStorage.getItem('history-' + id)) || {
+    summary:'',
+    abstractedCursor:0,
+    messages:[]
+    }
   }
 
   function savecurrentTalking(id) {

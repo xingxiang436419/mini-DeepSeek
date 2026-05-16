@@ -27,11 +27,11 @@ function scrollToBottom() {
   })
 }
 
-watch(() => historyList.value.length, () => {
+watch(() => historyList.value.messages.length, () => {
   scrollToBottom()
 })
 
-watch(() => historyList.value[historyList.value.length - 1]?.answer, () => {
+watch(() => historyList.value.messages[historyList.value.messages.length - 1]?.answer, () => {
   scrollToBottom()
 })
 </script>

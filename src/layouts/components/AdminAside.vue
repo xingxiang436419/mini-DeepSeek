@@ -47,8 +47,8 @@
           </el-dropdown>
         </span>
       </template>
+      <!-- 编辑状态：显示 input -->
       <template v-else>
-        <!-- 编辑状态：显示 input -->
         <input
           ref="editInput"
           v-model="editText"

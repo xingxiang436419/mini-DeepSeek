@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted,isProxy } from 'vue'
+import { ref, computed, onMounted ,isProxy} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/historyList'
 import { storeToRefs } from 'pinia'
@@ -32,14 +32,16 @@ const routeId = computed(() => {
 })
 
 const historyStore = useHistoryStore()
-const { historyList: currentList } = storeToRefs(historyStore)
+const { historyList: currentList} = storeToRefs(historyStore)
+const abstractedCursor=computed({
+  get:()=>currentList.value.abstractedCursor,
+  set:(value)=>{
+    currentList.value.abstractedCursor=value
+  }
+})
 
 onMounted(() => {
-  if (routeId.value) {
     historyStore.getcurrentTalking(routeId.value)
-  } else {
-    historyStore.historyList = []
-  }
 })
 
 async function sendQuestion() {
@@ -49,17 +51,18 @@ async function sendQuestion() {
   userQuestion.value = ''
   isTyping.value = true // 开启按钮的 loading 状态
 
+  //构造发送请求时的message
+  const messages = buildMessages(question)
+
   // 【关键】流式开始时就创建消息条目
   const newMessage = { question, answer: '' }
-  currentList.value.push(newMessage)
+  currentList.value.messages.push(newMessage)
 
   // 【修正】从数组里把刚刚 push 进去的那个 Proxy 拿出来
-  const reactiveMessage = currentList.value[currentList.value.length - 1]
-
+  const reactiveMessage = currentList.value.messages[currentList.value.messages.length - 1]
 
 
   try {
-    const messages = buildMessages(question)
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -86,6 +89,7 @@ async function sendQuestion() {
       const chunk = decoder.decode(value)
       const lines = chunk.split('\n').filter(line => line.trim())
 
+      // 处理流式输出，实现打字机效果
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const dataStr = line.slice(6)
@@ -118,11 +122,13 @@ async function sendQuestion() {
       historyStore.addHistory(tempId, sumMessage)
     }
     router.push(`/talking/${tempId}`)
+    currentList.value.summary=await generateSum()
     historyStore.savecurrentTalking(tempId)
+
 
   } catch (error) {
     console.error('接口调用失败:', error)
-    currentList.value.pop()
+    currentList.value.messages.pop()
   } finally {
     isTyping.value = false
   }
@@ -132,21 +138,84 @@ function buildMessages(newQuestion) {
   const messages = []
 
   // 1. 添加系统提示（可选，让 AI 扮演特定角色）
-  // messages.push({
-  //   role: "system",
-  //   content: "你是 DeepSeek，一个有用且智能的 AI 助手。"
-  // })
+  messages.push({
+    role: "system",
+    content: "你是一个有用且智能的 AI 助手。"
+  })
 
+
+  if(currentList.value.summary){
+    messages.push(
+      {
+        role:'system',
+        content:`以下是此前对话摘要：${currentList.value.summary}`
+      }
+    )
+  }
+
+  const recentList=currentList.value.messages.slice(-6)
   // 2. 遍历历史对话，组装 messages
-  for (const item of currentList.value) {
-    messages.push({ role: "user", content: item.question })
-    messages.push({ role: "assistant", content: item.answer })
+  for (const item of recentList) {
+    if(item.question){
+      messages.push({ role: "user", content: item.question })
+    }
+    if(item.answer){
+      messages.push({ role: "assistant", content: item.answer })
+    }
   }
 
   // 3. 添加当前问题
   messages.push({ role: "user", content: newQuestion })
 
   return messages
+}
+
+async function generateSum(){
+  if(currentList.value.messages.length<=8){
+    return ''
+  }else{
+    let messageToSum=[]
+    messageToSum.push({
+      role: 'system',
+      content: '将下面的内容概括总结，保持核心主题的同时做到尽量简略，方便我将其作为下次发请求给你时携带的context'
+    })
+
+    if(currentList.value.summary){
+      messageToSum.push({
+      role: 'system',
+      content: `这些是之前已经总结过的内容（更早之前的context）：${currentList.value.summary}`
+    })
+    }
+
+
+    for(const item of currentList.value.messages.slice(abstractedCursor.value,-6)){
+      if(item.question){
+        messageToSum.push({role:'user',content:item.question})
+      }
+      if(item.answer){
+        messageToSum.push({role:'assistant',content:item.answer})
+      }
+    }
+
+
+    abstractedCursor.value+=currentList.value.messages.slice(abstractedCursor.value,-6).length
+
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer sk-8f4a545bcde1428aaaaae4f0ab89b939`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: messageToSum,
+        stream: false  // 关闭流式
+      })
+    })
+
+    const data=await response.json()
+    return data.choices?.[0]?.message?.content||''
+  }
 }
 
 function summarizeText(text) {
