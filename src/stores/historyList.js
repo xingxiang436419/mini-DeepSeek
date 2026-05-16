@@ -10,7 +10,7 @@ export const useHistoryStore = defineStore('history', () => {
   const historys = ref([])
 
   function getcurrentTalking(id) {
-    historyList.value = JSON.parse(localStorage.getItem('history-' + id)) || {
+    historyList.value = id? JSON.parse(localStorage.getItem('history-' + id)) : {
     summary:'',
     abstractedCursor:0,
     messages:[]
