@@ -52,9 +52,7 @@
     </Transition>
 
     <el-main>
-      <div class="h-full w-[774px] m-auto flex flex-col items-center justify-center">
-        <router-view></router-view>
-      </div>
+      <router-view></router-view>
     </el-main>
   </el-container>
 </template>

@@ -6,7 +6,7 @@
         {{ item.question }}
       </div>
       <!-- DeepSeek的解答 -->
-      <div class="self-start text-left bg-gray-100 rounded p-2 m-1 max-w-[80%] inline-block break-words">
+      <div class="self-start text-left rounded p-2 m-1 max-w-[80%] inline-block break-words">
         <MarkdownRenderer :initAnswer="item.answer"></MarkdownRenderer>
       </div>
     </template>

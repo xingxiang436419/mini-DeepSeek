@@ -1,17 +1,19 @@
 <template>
-  <el-input
-    ref="inputSearch"
-    v-model="userQuestion"
-    type="textarea"
-    :autosize="{ minRows: 4, maxRows: 16 }"
-    placeholder="给DeepSeek发送消息"
-    @keydown.enter="handleEnter"
-  />
-  <div class="flex justify-between w-full">
-    <input type="file">
-    <el-button type="primary" @click="sendQuestion"
-      :loading="isTyping"
-      :disabled="userQuestion.trim().length === 0">发送</el-button>
+  <div class="max-w-[774px] w-[774px] inputContainer">
+    <el-input
+      ref="inputSearch"
+      v-model="userQuestion"
+      type="textarea"
+      :autosize="{ minRows: 4, maxRows: 16 }"
+      placeholder="给DeepSeek发送消息"
+      @keydown.enter="handleEnter"
+    />
+    <div class="flex justify-between w-full">
+      <input type="file">
+      <el-button type="primary" @click="sendQuestion"
+        :loading="isTyping"
+        :disabled="userQuestion.trim().length === 0">发送</el-button>
+    </div>
   </div>
 </template>
 
@@ -238,4 +240,7 @@ function handleEnter(event) {
 </script>
 
 <style>
+.inputContainer{
+  background-color: #fff;
+}
 </style>
