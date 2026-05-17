@@ -1,5 +1,7 @@
 <template>
-  <div class="h-full w-full flex flex-col items-center justify-start overflow-auto">
+  <div ref="scrollContainer"
+    class="h-full w-full flex flex-col items-center justify-start overflow-auto"
+    @scroll="handleScroll">
     <!-- 聊天记录列表 -->
     <div class="max-w-[774px] m-auto  mt-[5px]">
       <talkingBorder></talkingBorder>
@@ -22,7 +24,7 @@ import { storeToRefs } from 'pinia';
 
 const historyStore = useHistoryStore()
 const { historyList } = storeToRefs(historyStore)
-
+const scrollContainer=ref(null)
 
 
 const inputRef=ref(null)
@@ -58,58 +60,39 @@ onUnmounted(()=>{
     inputObserver.value.disconnect()
   }
 })
-// // 是否允许自动滚动（用户手动滚动后设为false）
-// const shouldAutoScroll = ref(true)
-// // 距离底部的阈值（像素），小于此值认为用户在底部附近
-// const scrollThreshold = 100
 
-// // 检查是否在底部附近（使用window级别的滚动）
-// function isNearBottom() {
-//   const { scrollY, innerHeight } = window
-//   const documentHeight = document.documentElement.scrollHeight || document.body.scrollHeight
-//   // 计算距离底部的距离
-//   return documentHeight - scrollY - innerHeight < scrollThreshold
-// }
+// 是否允许自动滚动（用户手动滚动后设为false）
+const shouldAutoScroll = ref(true)
+// 距离底部的阈值（像素），小于此值认为用户在底部附近
+const scrollThreshold = 100
 
-// // 处理滚动事件
-// function handleScroll() {
-//   // 用户手动滚动后，检查是否还在底部附近
-//   shouldAutoScroll.value = isNearBottom()
-// }
+// 检查是否在底部附近（使用window级别的滚动）
+function isNearBottom() {
+  const { scrollHeight, offsetHeight,scrollTop} = scrollContainer.value
+  // 计算距离底部的距离
+  return scrollHeight - offsetHeight - scrollTop < scrollThreshold
+}
 
-// // 智能滚动到底部（使用window级别的滚动）
-// function scrollToBottom() {
-//   nextTick(() => {
-//     if (shouldAutoScroll.value) {
-//       window.scrollTo({
-//         top: document.documentElement.scrollHeight || document.body.scrollHeight,
-//         behavior: 'smooth'
-//       })
-//     }
-//   })
-// }
+// 处理滚动事件
+function handleScroll() {
+  // 用户手动滚动后，检查是否还在底部附近
+  shouldAutoScroll.value = isNearBottom()
+}
 
-// // 监听消息变化
-// watch(() => historyList.value.messages.length, () => {
-//   scrollToBottom()
-// })
+// 智能滚动到底部（使用window级别的滚动）
+function scrollToBottom() {
+  nextTick(() => {
+    if (shouldAutoScroll.value) {
+      scrollContainer.value.scrollTop=scrollContainer.value.scrollHeight
+    }
+  })
+}
 
-// watch(() => historyList.value.messages[historyList.value.messages.length - 1]?.answer, () => {
-//   scrollToBottom()
-// })
+// 监听消息变化
+watch(() =>historyList.value.messages , () => {
+  scrollToBottom()
+},{deep:true})
 
-// // 注册全局滚动事件监听
-// onMounted(() => {
-//   window.addEventListener('scroll', handleScroll)
-//   // 组件挂载后获取输入框高度
-//   nextTick(() => {
-//     getInputHeight()
-//   })
-// })
-
-// onUnmounted(() => {
-//   window.removeEventListener('scroll', handleScroll)
-// })
 </script>
 <style scoped>
 </style>
