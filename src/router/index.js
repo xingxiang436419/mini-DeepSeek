@@ -28,8 +28,8 @@ const router = createRouter({
 
 router.beforeEach((to, from) => {
   if (to.name === 'Talking' && to.params.id) {
-    const historyStore = useHistoryStore()
-    historyStore.getcurrentTalking(to.params.id)
+    // const historyStore = useHistoryStore()
+    // historyStore.getcurrentTalking(to.params.id)
   }
 })
 

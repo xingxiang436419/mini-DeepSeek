@@ -3,7 +3,7 @@
     class="h-full w-full flex flex-col items-center justify-start overflow-auto"
     @scroll="handleScroll">
     <!-- 聊天记录列表 -->
-    <div class="max-w-[774px] m-auto  mt-[5px]">
+    <div class="w-[65%] m-auto  mt-[5px]">
       <talkingBorder></talkingBorder>
       <div :style="{ height: inputHeight + 'px' }"></div>
     </div>

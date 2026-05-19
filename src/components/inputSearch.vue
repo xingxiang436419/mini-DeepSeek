@@ -13,18 +13,20 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         <input type="file" hidden>
       </label>
-      <el-button type="primary" @click="sendQuestion"
-        :loading="isTyping"
+      <el-button type="primary" @click="sendQuestion" v-if="!isTyping"
         :disabled="userQuestion.trim().length === 0"
         class="send-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <el-icon><Promotion /></el-icon>
+      </el-button>
+      <el-button v-else type="primary" class="stop-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 4.88C2 3.68009 2 3.08013 2.30557 2.65954C2.40426 2.52371 2.52371 2.40426 2.65954 2.30557C3.08013 2 3.68009 2 4.88 2H11.12C12.3199 2 12.9199 2 13.3405 2.30557C13.4763 2.40426 13.5957 2.52371 13.6944 2.65954C14 3.08013 14 3.68009 14 4.88V11.12C14 12.3199 14 12.9199 13.6944 13.3405C13.5957 13.4763 13.4763 13.5957 13.3405 13.6944C12.9199 14 12.3199 14 11.12 14H4.88C3.68009 14 3.08013 14 2.65954 13.6944C2.52371 13.5957 2.40426 13.4763 2.30557 13.3405C2 12.9199 2 12.3199 2 11.12V4.88Z" fill="currentColor"></path></svg>
       </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed,watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/historyList'
 import { storeToRefs } from 'pinia'
@@ -32,7 +34,8 @@ import { storeToRefs } from 'pinia'
 const router = useRouter()
 const route = useRoute()
 const userQuestion = ref('')
-const isTyping = ref(false)
+const isNewTalking=ref(false)
+
 
 const routeId = computed(() => {
   const val = route.params.id
@@ -40,7 +43,7 @@ const routeId = computed(() => {
 })
 
 const historyStore = useHistoryStore()
-const { historyList: currentList} = storeToRefs(historyStore)
+const { historyList: currentList,skipNextRouteSync,isTyping} = storeToRefs(historyStore)
 
 //已摘要游标
 const abstractedCursor = computed({
@@ -52,16 +55,26 @@ const abstractedCursor = computed({
   }
 })
 
-onMounted(() => {
-    historyStore.getcurrentTalking(routeId.value)
-})
+
+//用watch代替在路由守卫里获取当前对话页面的聊天界面的逻辑
+watch(
+  () => route.params.id,
+  (id) => {
+    if(skipNextRouteSync.value){
+      skipNextRouteSync.value=false
+      return
+    }
+    historyStore.getcurrentTalking(id)
+  },
+  { immediate: true }
+)
 
 async function sendQuestion() {
   if (!userQuestion.value.trim()) return
 
   const question = userQuestion.value
   userQuestion.value = ''
-  isTyping.value = true // 开启按钮的 loading 状态
+
 
   //构造发送请求时的message
   const messages = buildMessages(question)
@@ -75,6 +88,7 @@ async function sendQuestion() {
 
 
   try {
+    isTyping.value = true // 开启按钮的 loading 状态
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -88,6 +102,20 @@ async function sendQuestion() {
         stream: true  // 开启流式
       })
     })
+
+
+    //页面跳转
+    let tempId = routeId.value ? routeId.value : null
+    if (!tempId) {
+      isNewTalking.value=true
+      tempId = Date.now()
+      historyStore.addHistory(tempId, '新对话')
+      skipNextRouteSync.value=true
+      // console.log('第四个测试点执行了\n'+skipNextRouteSync.value)
+      await router.push(`/talking/${tempId}`)
+    }
+
+
 
     // 【关键】流式处理数据
     const reader = response.body.getReader()
@@ -127,13 +155,15 @@ async function sendQuestion() {
       }
     }
 
-    let tempId = routeId.value ? routeId.value : null
-    if (!tempId) {
-      tempId = Date.now()
-      const sumMessage = summarizeText(newMessage.answer)
-      historyStore.addHistory(tempId, sumMessage)
+    //生成当前对话的总结
+    isTyping.value = false
+    if(isNewTalking.value){
+      const sumMessage = summarizeText(reactiveMessage.answer)
+      historyStore.updateHistory(tempId,sumMessage)
+      isNewTalking.value=false
     }
-    router.push(`/talking/${tempId}`)
+
+
     await generateSum()
     historyStore.savecurrentTalking(tempId)
 
@@ -142,7 +172,7 @@ async function sendQuestion() {
     console.error('接口调用失败:', error)
     currentList.value.messages.pop()
   } finally {
-    isTyping.value = false
+    // isTyping.value = false
   }
 }
 
@@ -279,6 +309,14 @@ function handleEnter(event) {
 }
 
 .send-btn {
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  min-width: 32px !important;
+}
+
+.stop-btn {
   border-radius: 50% !important;
   width: 32px !important;
   height: 32px !important;

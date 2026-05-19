@@ -9,12 +9,24 @@ export const useHistoryStore = defineStore('history', () => {
   })
   const historys = ref([])
 
+  //从首页发第一条消息并跳到新会话是否要从本地存储中取数据
+  const skipNextRouteSync =ref(false)
+
+  const isTyping = ref(false)
+
   function getcurrentTalking(id) {
-    historyList.value = id? JSON.parse(localStorage.getItem('history-' + id)) : {
-    summary:'',
-    abstractedCursor:0,
-    messages:[]
+    const emptyTalking = {
+      summary: '',
+      abstractedCursor: 0,
+      messages: []
     }
+
+    if (!id) {
+      historyList.value = emptyTalking
+      return
+    }
+
+    historyList.value = JSON.parse(localStorage.getItem('history-' + id)) || emptyTalking
   }
 
   function savecurrentTalking(id) {
@@ -23,7 +35,7 @@ export const useHistoryStore = defineStore('history', () => {
 
   function addHistory(id, text) {
     historys.value = JSON.parse(localStorage.getItem('historys')) || []
-    historys.value.push({ id: id, text: text })
+    historys.value.unshift({ id: id, text: text })
     localStorage.setItem('historys', JSON.stringify(historys.value))
   }
 
@@ -45,5 +57,7 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
-  return { historyList, getcurrentTalking, savecurrentTalking, addHistory, historys, initHistory, deleteHistory, updateHistory }
+  return { historyList, getcurrentTalking, savecurrentTalking, addHistory,
+     historys, initHistory, deleteHistory, updateHistory ,skipNextRouteSync
+    ,isTyping}
 })
