@@ -25,7 +25,11 @@ import { storeToRefs } from 'pinia';
 const historyStore = useHistoryStore()
 const { historyList } = storeToRefs(historyStore)
 const scrollContainer=ref(null)
+// 当从首页（index.vue）新建对话发送并跳转到对话页（talking）时会触发setup和onMounted方法中的打印语句
+// console.log('Im tailking')
 
+// 测试刷新页面时的talking和onMounted
+// console.log('talking组件刷新了')
 
 const inputRef=ref(null)
 const inputHeight=ref(145)
@@ -38,6 +42,12 @@ function updateInputHeight(){
 }
 
 onMounted(()=>{
+  // console.log('Im Mounting')
+  // 此代码不会因为不同route.params.id的talking切换而执行
+
+  // 测试刷新页面时的talking和onMounted
+  // console.log('talking组件挂载了')
+
   nextTick(()=>{
     updateInputHeight()
 

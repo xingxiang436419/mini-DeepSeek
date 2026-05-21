@@ -106,6 +106,7 @@ function handleCommand(command, id) {
       //     message: '删除成功',
       //   })
         historyStore.deleteHistory(id);
+        if(id==route.params.id)
         router.push('/');
       // })
       break;
