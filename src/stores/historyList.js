@@ -3,8 +3,7 @@ import { defineStore } from 'pinia'
 
 export const useHistoryStore = defineStore('history', () => {
   const historyList = ref({
-    summary:'',
-    abstractedCursor:0,
+    summarys:[],
     messages:[]
   })
   const historys = ref([])
@@ -16,8 +15,7 @@ export const useHistoryStore = defineStore('history', () => {
 
   function getcurrentTalking(id) {
     const emptyTalking = {
-      summary: '',
-      abstractedCursor: 0,
+      summarys: [],
       messages: []
     }
 
