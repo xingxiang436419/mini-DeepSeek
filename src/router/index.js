@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { useHistoryStore } from '@/stores/historyList'
+// import { useHistoryStore } from '@/stores/historyList'
 
 const routes = [
   {
@@ -26,11 +26,11 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from) => {
-  if (to.name === 'Talking' && to.params.id) {
-    // const historyStore = useHistoryStore()
-    // historyStore.getcurrentTalking(to.params.id)
-  }
-})
+// router.beforeEach((to, from) => {
+//   if (to.name === 'Talking' && to.params.id) {
+//     // const historyStore = useHistoryStore()
+//     // historyStore.getcurrentTalking(to.params.id)
+//   }
+// })
 
 export default router

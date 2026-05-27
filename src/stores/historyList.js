@@ -1,34 +1,31 @@
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
-
 export const useHistoryStore = defineStore('history', () => {
-  const historyList = ref({
-    summarys:[],
-    messages:[]
-  })
+
   const historys = ref([])
 
-  //从首页发第一条消息并跳到新会话是否要从本地存储中取数据
-  const skipNextRouteSync =ref(false)
+  const session=reactive({})
 
-  const isTyping = ref(false)
+  //从首页发第一条消息并跳到新会话是否要从本地存储中取数据
+  // const skipNextRouteSync =ref(false)
+
 
   function getcurrentTalking(id) {
     const emptyTalking = {
+      isPrinting:false,
       summarys: [],
       messages: []
     }
 
-    if (!id) {
-      historyList.value = emptyTalking
-      return
-    }
-
-    historyList.value = JSON.parse(localStorage.getItem('history-' + id)) || emptyTalking
+    return JSON.parse(localStorage.getItem('history-' + id)) || emptyTalking
   }
 
   function savecurrentTalking(id) {
-    localStorage.setItem('history-' + id, JSON.stringify(historyList.value))
+    // console.log(currentList)
+
+    console.log('保存的逻辑执行了，保存在Id:',id)
+    const currentList=session[id]
+    localStorage.setItem('history-' + id, JSON.stringify(currentList))
   }
 
   function addHistory(id, text) {
@@ -55,7 +52,7 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
-  return { historyList, getcurrentTalking, savecurrentTalking, addHistory,
-     historys, initHistory, deleteHistory, updateHistory ,skipNextRouteSync
-    ,isTyping}
+  return { getcurrentTalking, savecurrentTalking, addHistory,
+     historys, initHistory, deleteHistory, updateHistory,session
+    }
 })

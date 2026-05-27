@@ -13,17 +13,22 @@
       <div class="text-center p-y-[4px] font-light text-xs line-heigth-[16px] bg-white">内容由AI生成，请注意甄别</div>
     </div>
   </div>
-
 </template>
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted,reactive } from 'vue'
+import { useRoute } from 'vue-router'
 import inputSearch from '@/components/inputSearch.vue'
 import talkingBorder from '@/components/talkingBorder.vue';
 import { useHistoryStore } from '@/stores/historyList';
-import { storeToRefs } from 'pinia';
+const historyStore=useHistoryStore()
+const route=useRoute()
 
-const historyStore = useHistoryStore()
-const { historyList } = storeToRefs(historyStore)
+// 当talking/123切换到talking/456时,该逻辑不会触发
+// onMounted(()=>{
+//   console.log('onMounted触发了')
+//   currentList.value=historyStore.getcurrentTalking(route.params.id)
+// })
+
 const scrollContainer=ref(null)
 // 当从首页（index.vue）新建对话发送并跳转到对话页（talking）时会触发setup和onMounted方法中的打印语句
 // console.log('Im tailking')
@@ -34,6 +39,15 @@ const scrollContainer=ref(null)
 const inputRef=ref(null)
 const inputHeight=ref(145)
 const inputObserver=ref(null)
+
+if(!historyStore.session[route.params.id]){
+  historyStore.session[route.params.id] = reactive({
+    isPrinting:false,
+    summarys: [],
+    messages: []
+  })
+  Object.assign(historyStore.session[route.params.id],historyStore.getcurrentTalking(route.params.id))
+}
 
 function updateInputHeight(){
   if(inputRef.value){
@@ -50,7 +64,6 @@ onMounted(()=>{
 
   nextTick(()=>{
     updateInputHeight()
-
     // 使用 ResizeObserver 监听输入框高度变化
     if(inputRef.value){
       inputObserver.value=new ResizeObserver(()=>{
@@ -92,16 +105,39 @@ function handleScroll() {
 // 智能滚动到底部（使用window级别的滚动）
 function scrollToBottom() {
   nextTick(() => {
-    if (shouldAutoScroll.value) {
-      scrollContainer.value.scrollTop=scrollContainer.value.scrollHeight
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
     }
   })
 }
 
+watch(()=>route.params.id,(newval)=>{
+
+  nextTick(() => {
+      scrollContainer.value.scrollTop=scrollContainer.value.scrollHeight
+  })
+  if(newval){
+
+    if(!historyStore.session[route.params.id]){
+      const currentList=historyStore.getcurrentTalking(newval)
+      // console.log(currentList)
+      historyStore.session[route.params.id]=reactive({
+      ...currentList
+    })
+    }
+  }
+},{immediate:true})
+
+
 // 监听消息变化
-watch(() =>historyList.value.messages , () => {
-  scrollToBottom()
-},{deep:true})
+watch(
+  () => historyStore.session[route.params.id],
+  () => {
+    scrollToBottom()
+    // console.log('syz')
+  },
+  { deep: true }
+)
 
 </script>
 <style scoped>

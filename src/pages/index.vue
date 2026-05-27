@@ -30,7 +30,7 @@
         </template>
       </el-tab-pane>
     </el-tabs>
-    <input-search></input-search>
+    <inputSearch></inputSearch>
   </div>
 
 </template>
@@ -39,6 +39,7 @@
 import InputSearch from '@/components/inputSearch.vue'
 import {ref} from 'vue'
 let mode=ref('快速')
+
 </script>
 
 <style>

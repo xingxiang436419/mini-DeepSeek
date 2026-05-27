@@ -13,7 +13,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         <input type="file" hidden multiple>
       </label>
-      <el-button type="primary" @click="sendQuestion" v-if="!isTyping"
+      <el-button type="primary" @click="sendQuestion" v-if="!isPrinting"
         :disabled="userQuestion.trim().length === 0"
         class="send-btn">
         <el-icon><Promotion /></el-icon>
@@ -26,23 +26,24 @@
 </template>
 
 <script setup>
-import { watch } from 'vue'
+
 import {useSearch} from '@/composables/search'
-const {userQuestion,sendQuestion,route,skipNextRouteSync,historyStore,handleEnter,isTyping,stopTalking}=useSearch()
+import { computed } from 'vue';
+// import {onMounted} from 'vue'
+import { useRoute } from 'vue-router';
+const route=useRoute()
+
+const {userQuestion,sendQuestion,
+  handleEnter,stopTalking,historyStore}=useSearch()
+//这里的props.currentList相当于父组件的currentList.value，所以在useSearch函数里使用时不需要.value
+const isPrinting=computed(()=>historyStore.session[route.params.id]?.isPrinting||false)
+
+// 当talking/123切换到talking/456时,该逻辑不会触发
+// onMounted(()=>{
+//   console.log('Input-onMounted触发了')
+// })
 
 
-//用watch代替在路由守卫里获取当前对话页面的聊天界面的逻辑
-watch(
-  () => route.params.id,
-  (id) => {
-    if(skipNextRouteSync.value){
-      skipNextRouteSync.value=false
-      return
-    }
-    historyStore.getcurrentTalking(id)
-  },
-  { immediate: true }
-)
 
 </script>
 

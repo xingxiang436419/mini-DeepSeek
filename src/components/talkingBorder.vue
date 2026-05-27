@@ -1,5 +1,5 @@
 <template>
-  <div v-if="messages.length!=0" class="flex flex-col p-x-[4px]">
+  <div v-if="messages?.length!=0" class="flex flex-col p-x-[4px]">
     <template v-for="(item,index) in messages" :key="index">
       <!-- 用户提出的问题 -->
       <div class="flex justify-end items-start m-1 gap-2">
@@ -25,13 +25,19 @@
 <script setup>
 import { useHistoryStore } from '@/stores/historyList';
 import MarkdownRenderer from './MarkdownRenderer.vue';
-import { storeToRefs } from 'pinia';
+// import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
-const historyStore = useHistoryStore();
-const { historyList } = storeToRefs(historyStore)
-const messages=computed(()=>{
-  return historyList.value.messages
-})
+import { useRoute } from 'vue-router';
+// 当talking/123切换到talking/456时,该逻辑不会触发
+// onMounted(()=>{
+//   console.log('Border-onMounted触发了')
+// })
+
+
+const historyStore=useHistoryStore()
+const route=useRoute()
+
+const messages = computed(() => historyStore.session[route.params.id]?.messages)
 </script>
 <style>
 .msg-bubble {

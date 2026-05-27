@@ -1,18 +1,16 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/historyList'
-import { storeToRefs } from 'pinia'
 
 
 export function useSearch(){
 
+
   const router = useRouter()
   const route = useRoute()
   const userQuestion = ref('')
-  const isNewTalking=ref(false)
-  const currentController=ref(null)
-
-
+  let isNewTalking=false
+  let currentController=null
 
   const routeId = computed(() => {
     const val = route.params.id
@@ -20,12 +18,12 @@ export function useSearch(){
   })
 
   const historyStore = useHistoryStore()
-  const { historyList: currentList,skipNextRouteSync,isTyping} = storeToRefs(historyStore)
 
+  let currentList=null
 
 
   function stopTalking(){
-    currentController.value.abort()
+    currentController?.abort()
   }
 
   async function sendQuestion() {
@@ -35,33 +33,34 @@ export function useSearch(){
     userQuestion.value = ''
 
 
+    let tempId = routeId.value ? routeId.value : null
+
+    //页面跳转
+    if (!tempId) {
+      isNewTalking=true
+      tempId = Date.now()
+      historyStore.addHistory(tempId, '新对话')
+
+      await router.push(`/talking/${tempId}`)
+    }
+    currentList=historyStore.session[tempId]
+
     //构造发送请求时的message
     const messages = buildMessages(question)
 
     // 【关键】流式开始时就创建消息条目
     const newMessage = { question, answer: '' }
-    currentList.value.messages.push(newMessage)
+    currentList.messages.push(newMessage)
 
     // 【修正】从数组里把刚刚 push 进去的那个 Proxy 拿出来
-    const reactiveMessage = currentList.value.messages[currentList.value.messages.length - 1]
+    const reactiveMessage = currentList.messages[currentList.messages.length - 1]
 
-    let tempId = routeId.value ? routeId.value : null
-    //页面跳转
-    if (!tempId) {
-      isNewTalking.value=true
-      tempId = Date.now()
-      historyStore.addHistory(tempId, '新对话')
-      skipNextRouteSync.value=true
-      // console.log('第四个测试点执行了\n'+skipNextRouteSync.value)
-      await router.push(`/talking/${tempId}`)
-    }
 
     try {
-      isTyping.value = true // 开启按钮的 loading 状态
+      historyStore.session[tempId].isPrinting=true // 开启按钮的 loading 状态
 
       const controller=new AbortController()
-      currentController.value=controller
-
+      currentController=controller
 
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -117,11 +116,11 @@ export function useSearch(){
       }
 
       //生成当前对话的总结
-      isTyping.value = false
-      if(isNewTalking.value){
+      historyStore.session[tempId].isPrinting=false
+      if(isNewTalking){
         const sumMessage = summarizeText(reactiveMessage.answer)
         historyStore.updateHistory(tempId,sumMessage)
-        isNewTalking.value=false
+        isNewTalking=false
       }
 
 
@@ -132,11 +131,11 @@ export function useSearch(){
     } catch (error) {
       if(error.name==='AbortError'){
         //生成当前对话的总结
-        isTyping.value = false
-        if(isNewTalking.value){
+        historyStore.session[tempId].isPrinting=false
+        if(isNewTalking){
           const sumMessage = summarizeText(reactiveMessage.answer)
           historyStore.updateHistory(tempId,sumMessage)
-          isNewTalking.value=false
+          isNewTalking=false
         }
 
         await generateSum()
@@ -144,11 +143,11 @@ export function useSearch(){
 
       }else{
         console.error('接口调用失败:', error)
-        currentList.value.messages.pop()
+        currentList.messages.pop()
       }
     } finally {
-      isTyping.value = false
-      currentController.value = null
+      historyStore.session[tempId].isPrinting=false
+      currentController = null
     }
   }
 
@@ -162,16 +161,17 @@ export function useSearch(){
     // })
 
 
-    if(currentList.value.summarys.length!=0){
+    if(currentList?.summarys?.length){
       messages.push(
         {
           role:'system',
-          content:`以下是此前对话记录摘要：${currentList.value.summarys.join('\n')}。可以将其作为后续回答问题时的上下文参考，以便更好的回答用户的问题`
+          content:`以下是此前对话记录摘要：${currentList.summarys.join('\n')}。可以将其作为后续回答问题时的上下文参考，以便更好的回答用户的问题`
         }
       )
     }
 
-    const recentList=currentList.value.messages.slice(-6)
+
+    const recentList=currentList.messages.slice(-6)
     // 2. 遍历历史对话，组装 messages
     for (const item of recentList) {
       if(item.question){
@@ -189,12 +189,12 @@ export function useSearch(){
   }
 
   async function generateSum(){
-    if(currentList.value.messages.length<=6){
+    if(currentList.messages.length<=6){
       return ''
     }else{
       let messageToSum=[]
 
-      for(const item of currentList.value.messages.slice(currentList.value.summarys.length,-6)){
+      for(const item of currentList.messages.slice(currentList.summarys.length,-6)){
         if(item.question){
           messageToSum.push({role:'user',content:item.question})
         }
@@ -223,7 +223,7 @@ export function useSearch(){
       })
 
       const data=await response.json()
-      currentList.value.summarys.push(`${data.choices?.[0]?.message?.content||''}`)
+      currentList.summarys.push(`${data.choices?.[0]?.message?.content||''}`)
     }
   }
 
@@ -249,8 +249,8 @@ export function useSearch(){
     sendQuestion()
   }
 
-  return {handleEnter,currentList,skipNextRouteSync,
-    sendQuestion,route,historyStore,userQuestion,isTyping,
+  return {handleEnter,
+    sendQuestion,route,historyStore,userQuestion,
     stopTalking
     }
 }
